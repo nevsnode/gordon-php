@@ -1,149 +1,151 @@
 <?php
 
-class Goophry
-{
-    protected $params   = array();
-    protected $redis    = null;
+namespace Goophry;
 
-    public function __construct($params = array())
+class Taskqueue
+{
+    protected $params;
+    protected $redis = null;
+
+    public function __construct(array $params = array())
     {
-        $defaults = array(
-            'redisServer'   => '127.0.0.1',
-            'redisPort'     => 6379,
-            'redisQueueKey' => 'taskqueue',
-            'redisTimeout'  => 2
-        );
-        $this->params = array_merge($defaults, $params);
+        if (!empty($params)) {
+            $this->mergeParams($params);
+        }
     }
 
-    public function addTask($type)
+    public function readConfig($file)
     {
-        $args = func_get_args();
-        array_shift($args);
-
-        if (empty($type)) {
+        if (!is_string($file) || !file_exists($file)) {
             return false;
         }
 
-        if (!$this->connect()) {
+        $config = json_decode(file_get_contents($file), true);
+        if (empty($config)) {
             return false;
         }
 
-        $key = sprintf('%s:%s', $this->params['redisQueueKey'], $type);
-        $value = json_encode((object)array(
-            'Args' => $this->encodeArgs($args),
-        ));
-
-        $this->redis->rPush($key, $value);
+        $this->mergeParams($config);
         return true;
     }
 
-    public function addTaskObj($task)
+    private function mergeParams(array $params)
     {
-        if (!($task instanceof GoophryTask)) {
-            return false;
+        $defaults = array(
+            'RedisServer'   => '127.0.0.1',
+            'RedisPort'     => '6379',
+            'RedisQueueKey' => 'taskqueue',
+            'RedisTimeout'  => 2,
+        );
+
+        // extract values that might come from the goophry configuration file
+        if (!empty($params['RedisAddress'])) {
+            list($server, $port) = explode(':', $params['RedisAddress']);
+            if (!empty($server)) {
+                $defaults['RedisServer'] = $server;
+            }
+            if (!empty($port)) {
+                $defaults['RedisPort'] = $port;
+            }
         }
 
-        $type = $task->getType();
-        if (empty($type)) {
-            return false;
-        }
-
-        $args = $task->getArgs();
-        array_unshift($args, $type);
-
-        return call_user_func_array(array($this, 'addTask'), $args);
+        $this->params = array_merge($defaults, $params);
     }
 
-    public function getFailedTask($type)
+    protected function connect()
     {
-        if (empty($type)) {
+        if (false === $this->redis) {
+            // there was already an attempt to create a connection, but it failed
             return false;
         }
 
-        if (!$this->connect()) {
+        if (null === $this->redis) {
+            // no instance of redis yet, so try it
+            if (!class_exists('\Redis')) {
+                // phpredis is not available
+                $this->redis = false;
+                return false;
+            }
+
+            try {
+                $this->redis = new \Redis();
+                if (!$this->redis->connect($this->params['RedisServer'], $this->params['RedisPort'], $this->params['RedisTimeout'])) {
+                    throw new \RedisException('redis connect returned FALSE');
+                }
+            } catch (\RedisException $e) {
+                $this->redis = false;
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function addTask($task)
+    {
+        if (is_string($task)) {
+            $type = $task;
+            $task = new Task();
+            $task->setType($type);
+
+            $args = func_get_args();
+            array_shift($args);
+            $task->setArgs($args);
+        }
+
+        return $this->addTaskObj($task);
+    }
+
+    protected function addTaskObj(Task $task)
+    {
+        if (false === $this->connect()) {
             return false;
         }
 
-        $key = sprintf('%s:%s:failed', $this->params['redisQueueKey'], $type);
+        $key = sprintf('%s:%s', $this->params['RedisQueueKey'], $task->getType());
+        $value = $task->getJson();
+
+        if (false === $this->redis->rPush($key, $value)) {
+            return false;
+        }
+        return true;
+    }
+
+    public function popFailedTask($type)
+    {
+        if (false === $this->connect()) {
+            return false;
+        }
+
+        $key = sprintf('%s:%s:failed', $this->params['RedisQueueKey'], $type);
 
         $value = $this->redis->lPop($key);
         if (empty($value)) {
             return false;
         }
 
-        $task = new GoophryTask();
-        if (!$task->parseJson($value)) {
+        $task = new Task();
+        $task->setType($type);
+        if (false === $task->parseJson($value)) {
             return false;
         }
-        $task->setType($type);
-
         return $task;
     }
 
-    protected function connect()
+    public function getFailedTask($type, $index)
     {
-        if (false === $this->redis) {
-            // there was already a try to create an instance for redis, but it failed
-            return false;
-        }
-
-        if (null === $this->redis) {
-            // there's no instance of redis yet, so try to connect
-            if (!class_exists('Redis')) {
-                $this->redis = false;
-                return false;
-            }
-
-            try {
-                $this->redis = new Redis();
-                if (!$this->redis->connect($this->params['redisServer'], $this->params['redisPort'], $this->params['redisTimeout'])) {
-                    throw new RedisException('redis connect returned FALSE');
-                }
-            } catch (RedisException $e) {
-                $this->redis = false;
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    protected function encodeArgs($args)
-    {
-        $return = array();
-
-        foreach ($args as $v) {
-            $v = $this->encodeArg($v);
-            if (false !== $v) {
-                $return[] = $v;
-            }
-        }
-
-        return $return;
-    }
-
-    protected function encodeArg($arg)
-    {
-        if (is_string($arg)) {
-            return $arg;
-        } elseif (is_numeric($arg)) {
-            return (string)$arg;
-        } elseif (is_object($arg) || is_array($arg)) {
-            return base64_encode(json_encode($arg));
-        }
-        return false;
+        return $this->popFailedTask($type);
     }
 }
 
-class GoophryTask
+class Task
 {
+    protected $type = false;
     protected $task;
 
     public function __construct()
     {
         $this->task = array(
-            'Type'          => '',
             'Args'          => array(),
             'ErrorMessage'  => '',
         );
@@ -151,62 +153,49 @@ class GoophryTask
 
     public function setType($type)
     {
-        $this->task['Type'] = $type;
+        $this->type = $type;
     }
 
     public function getType()
     {
-        if (empty($this->task['Type'])) {
-            return false;
-        }
-        return $this->task['Type'];
+        return $this->type;
     }
 
-    public function setArgs($args)
+    public function setArgs(array $args)
     {
-        $this->task['Args'] = $args;
+        $this->task['Args'] = $this->encodeArgs($args);
     }
 
     public function getArgs()
     {
-        if (empty($this->task['Args'])) {
-            return array();
-        }
         return $this->task['Args'];
+    }
+
+    public function addArg($arg)
+    {
+        $this->task['Args'][] = $this->encodeArg($arg);
     }
 
     public function getArg($index = 0)
     {
-        if (empty($this->task['Args']) || !isset($this->task['Args'][$index])) {
+        if (!isset($this->task['Args'][$index])) {
             return false;
         }
         return $this->task['Args'][$index];
     }
 
-    public function addArg($arg)
-    {
-        if (empty($this->task['Args'])) {
-            $this->task['Args'] = array();
-        }
-        $this->task['Args'][] = $arg;
-    }
-
-    public function setErrorMessage($msg)
-    {
-        $this->task['ErrorMessage'] = $msg;
-    }
-
     public function getErrorMessage()
     {
-        if (empty($this->task['ErrorMessage'])) {
-            return '';
-        }
         return $this->task['ErrorMessage'];
     }
 
     public function getJson()
     {
-        return json_encode($this->task);
+        $task = $this->task;
+        if (empty($task['ErrorMessage'])) {
+            unset($task['ErrorMessage']);
+        }
+        return json_encode($task);
     }
 
     public function parseJson($string)
@@ -217,5 +206,22 @@ class GoophryTask
         }
         $this->task = array_merge($this->task, $task);
         return true;
+    }
+
+    protected function encodeArgs(array $args)
+    {
+        foreach ($args as &$arg) {
+            $arg = $this->encodeArg($arg);
+        }
+        return $args;
+    }
+
+    protected function encodeArg($arg)
+    {
+        if (is_object($arg) || is_array($arg)) {
+            return base64_encode(json_encode($arg));
+        } else {
+            return strval($arg);
+        }
     }
 }
