@@ -3,13 +3,27 @@ Goophry PHP
 
 Example library for Goophry written in PHP.
 
-Currently some work-in-progress.
-
-TODO
+Use with composer
 ---
+Install with composer:
+```sh
+composer require nevsnode/goophry
+```
 
-* Rewrite Goophry class (Namespaces, cleaner API, etc.)
-* Make usable with composer
+Use it in your code:
+```php
+<?php
+$taskqeue = new \Goophry\Taskqueue();
+$taskqeue->readConfig('/path/to/goophry.config.json');
+
+$task = new \Goophry\Task();
+$task->setType('something');
+$task->addArg('123');
+
+$taskqeue->addTask($task);
+```
+
+Take a look at `example.php` for more example code.
 
 
 License
