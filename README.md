@@ -13,14 +13,14 @@ composer require nevsnode/goophry
 Use it in your code:
 ```php
 <?php
-$taskqeue = new \Goophry\Taskqueue();
-$taskqeue->readConfig('/path/to/goophry.config.json');
+$taskqueue = new \Goophry\Taskqueue();
+$taskqueue->readConfig('/path/to/goophry.config.json');
 
 $task = new \Goophry\Task();
 $task->setType('something');
 $task->addArg('123');
 
-$taskqeue->addTask($task);
+$taskqueue->addTask($task);
 ```
 
 Take a look at `example.php` for more example code.
