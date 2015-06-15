@@ -1,6 +1,6 @@
 <?php
 
-namespace Goophry;
+namespace Gordon;
 
 class Taskqueue
 {
@@ -33,7 +33,7 @@ class Taskqueue
     }
 
     /**
-    * Reads a Goophry configuration file and merges it with the internal params.
+    * Reads a Gordon configuration file and merges it with the internal params.
     *
     * @param string $file
     * @return bool
@@ -68,7 +68,7 @@ class Taskqueue
             'RedisTimeout'  => 2,
         );
 
-        // extract values that might come from the goophry configuration file
+        // extract values that might come from the gordon configuration file
         if (!empty($params['RedisAddress'])) {
             list($server, $port) = explode(':', $params['RedisAddress']);
             if (!empty($server)) {

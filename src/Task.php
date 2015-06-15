@@ -1,6 +1,6 @@
 <?php
 
-namespace Goophry;
+namespace Gordon;
 
 class Task
 {

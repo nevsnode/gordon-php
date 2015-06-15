@@ -1,22 +1,22 @@
-Goophry PHP
+Gordon PHP
 ===
 
-Example library for Goophry written in PHP.
+Example library for Gordon written in PHP.
 
 Use with composer
 ---
 Install with composer:
 ```sh
-composer require nevsnode/goophry
+composer require nevsnode/gordon
 ```
 
 Use it in your code:
 ```php
 <?php
-$taskqueue = new \Goophry\Taskqueue();
-$taskqueue->readConfig('/path/to/goophry.config.json');
+$taskqueue = new \Gordon\Taskqueue();
+$taskqueue->readConfig('/path/to/gordon.config.json');
 
-$task = new \Goophry\Task();
+$task = new \Gordon\Task();
 $task->setType('something');
 $task->addArg('123');
 
