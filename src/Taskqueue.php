@@ -27,6 +27,13 @@ class Taskqueue
     */
     public function __construct(array $params = array())
     {
+        $this->params = array(
+            'RedisServer' => '127.0.0.1',
+            'RedisPort' => '6379',
+            'RedisQueueKey' => 'taskqueue',
+            'RedisTimeout' => 2,
+        );
+
         if (!empty($params)) {
             $this->mergeParams($params);
         }
@@ -61,25 +68,18 @@ class Taskqueue
     */
     private function mergeParams(array $params)
     {
-        $defaults = array(
-            'RedisServer'   => '127.0.0.1',
-            'RedisPort'     => '6379',
-            'RedisQueueKey' => 'taskqueue',
-            'RedisTimeout'  => 2,
-        );
-
         // extract values that might come from the gordon configuration file
         if (!empty($params['RedisAddress'])) {
             list($server, $port) = explode(':', $params['RedisAddress']);
             if (!empty($server)) {
-                $defaults['RedisServer'] = $server;
+                $params['RedisServer'] = $server;
             }
             if (!empty($port)) {
-                $defaults['RedisPort'] = $port;
+                $params['RedisPort'] = $port;
             }
         }
 
-        $this->params = array_merge($defaults, $params);
+        $this->params = array_merge($this->params, $params);
     }
 
     /**
