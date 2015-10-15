@@ -22,8 +22,7 @@ $taskqueue->addTask('something', '123');
 
 
 // or create a Task-instance and pass that instead
-$task = new Gordon\Task();
-$task->setType('something');
+$task = new Gordon\Task('taskqueue');
 $task->addArg('123');
 $taskqueue->addTask($task);
 

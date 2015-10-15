@@ -22,25 +22,28 @@ class Task
     /**
     * Creates a new Task instance.
     *
-    * @return void
+    * @return \Gordon\Task
     */
-    public function __construct()
+    public function __construct($type = '')
     {
+        $this->type = $type;
         $this->task = array(
-            'Args'          => array(),
+            'Args' => array(),
             'ErrorMessage'  => '',
         );
+        return $this;
     }
 
     /**
     * Set the type of this task.
     *
     * @param string $type
-    * @return void
+    * @return \Gordon\Task
     */
     public function setType($type)
     {
         $this->type = $type;
+        return $this;
     }
 
     /**
@@ -78,11 +81,12 @@ class Task
     * Adds an argument for this task.
     *
     * @param mixed $arg
-    * @return void
+    * @return \Gordon\Task
     */
     public function addArg($arg)
     {
         $this->task['Args'][] = $this->encodeArg($arg);
+        return $this;
     }
 
     /**

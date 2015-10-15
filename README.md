@@ -13,11 +13,13 @@ composer require nevsnode/gordon
 Use it in your code:
 ```php
 <?php
-$taskqueue = new \Gordon\Taskqueue();
+use Gordon\Task;
+use Gordon\Taskqueue;
+
+$taskqueue = new Taskqueue();
 $taskqueue->readConfig('/path/to/gordon.config.json');
 
-$task = new \Gordon\Task();
-$task->setType('something');
+$task = new Task('something');
 $task->addArg('123');
 
 $taskqueue->addTask($task);
