@@ -27,37 +27,16 @@ class Taskqueue
     */
     public function __construct(array $params = array())
     {
+        // set default parameters
         $this->params = array(
-            'RedisServer' => '127.0.0.1',
-            'RedisPort' => '6379',
-            'RedisQueueKey' => 'taskqueue',
-            'RedisTimeout' => 2,
+            'redis_server' => '127.0.0.1',
+            'redis_port' => '6379',
+            'queue_key' => 'taskqueue',
+            'redis_timeout' => 2,
         );
 
-        if (!empty($params)) {
-            $this->mergeParams($params);
-        }
-    }
-
-    /**
-    * Reads a Gordon configuration file and merges it with the internal params.
-    *
-    * @param string $file
-    * @return bool
-    */
-    public function readConfig($file)
-    {
-        if (!is_string($file) || !file_exists($file)) {
-            return false;
-        }
-
-        $config = json_decode(file_get_contents($file), true);
-        if (empty($config)) {
-            return false;
-        }
-
-        $this->mergeParams($config);
-        return true;
+        // merge passed parameters
+        $this->setParams($params);
     }
 
     /**
@@ -66,19 +45,8 @@ class Taskqueue
     * @param array $params
     * @return void
     */
-    private function mergeParams(array $params)
+    public function setParams(array $params)
     {
-        // extract values that might come from the gordon configuration file
-        if (!empty($params['RedisAddress'])) {
-            list($server, $port) = explode(':', $params['RedisAddress']);
-            if (!empty($server)) {
-                $params['RedisServer'] = $server;
-            }
-            if (!empty($port)) {
-                $params['RedisPort'] = $port;
-            }
-        }
-
         $this->params = array_merge($this->params, $params);
     }
 
@@ -89,31 +57,18 @@ class Taskqueue
     */
     protected function connect()
     {
-        if (false === $this->redis) {
-            // there was already an attempt to create a connection, but it failed
-            return false;
-        }
-
         if (null === $this->redis) {
             // no instance of redis yet, so try it
             if (!class_exists('\Redis')) {
                 // phpredis is not available
-                $this->redis = false;
-                return false;
+                throw new TaskqueueException('Redis-class is not present on this system');
             }
 
-            try {
-                $this->redis = new \Redis();
-                if (!$this->redis->connect($this->params['RedisServer'], $this->params['RedisPort'], $this->params['RedisTimeout'])) {
-                    throw new \RedisException('redis connect returned FALSE');
-                }
-            } catch (\RedisException $e) {
-                $this->redis = false;
-                return false;
+            $this->redis = new \Redis();
+            if (!$this->redis->connect($this->params['redis_server'], $this->params['redis_port'], $this->params['redis_timeout'])) {
+                throw new TaskqueueException('Redis-connection could not be established');
             }
         }
-
-        return true;
     }
 
     /**
@@ -148,11 +103,9 @@ class Taskqueue
     */
     protected function addTaskObj(Task $task)
     {
-        if (false === $this->connect()) {
-            return false;
-        }
+        $this->connect();
 
-        $key = sprintf('%s:%s', $this->params['RedisQueueKey'], $task->getType());
+        $key = sprintf('%s:%s', $this->params['queue_key'], $task->getType());
         $value = $task->getJson();
 
         if (false === $this->redis->rPush($key, $value)) {
@@ -169,34 +122,42 @@ class Taskqueue
     */
     public function popFailedTask($type)
     {
-        if (false === $this->connect()) {
-            return false;
-        }
+        $this->connect();
 
-        $key = sprintf('%s:%s:failed', $this->params['RedisQueueKey'], $type);
+        $key = sprintf('%s:%s:failed', $this->params['queue_key'], $type);
 
         $value = $this->redis->lPop($key);
         if (empty($value)) {
             return false;
         }
 
-        $task = new Task();
-        $task->setType($type);
-        if (false === $task->parseJson($value)) {
-            return false;
-        }
+        $task = new Task($type);
+        $task->parseJson($value);
         return $task;
     }
 
     /**
-    * Alias for popFailedTask, for backwards compatibility.
-    * Deprecated - do not use any more.
+    * Returns the first entry from a failed-task list.
     *
     * @param string $type
     * @return bool|Task
     */
     public function getFailedTask($type)
     {
-        return $this->popFailedTask($type);
+        $this->connect();
+
+        $key = sprintf('%s:%s:failed', $this->params['queue_key'], $type);
+
+        $value = $this->redis->lIndex($key, 0);
+        if (empty($value)) {
+            return false;
+        }
+
+        $task = new Task($type);
+        $task->parseJson($value);
+        return $task;
     }
 }
+
+class TaskqueueException extends \Exception
+{}

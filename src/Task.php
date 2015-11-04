@@ -137,7 +137,7 @@ class Task
     {
         $task = json_decode($string, true);
         if (empty($task)) {
-            return false;
+            throw new TaskException('Invalid JSON to parse');
         }
         $this->task = array_merge($this->task, $task);
         return true;
@@ -168,7 +168,10 @@ class Task
         if (is_object($arg) || is_array($arg)) {
             return base64_encode(json_encode($arg));
         } else {
-            return strval($arg);
+            return (string)$arg;
         }
     }
 }
+
+class TaskException extends \Exception
+{}
