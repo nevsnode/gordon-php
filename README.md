@@ -17,7 +17,6 @@ use Gordon\Task;
 use Gordon\Taskqueue;
 
 $taskqueue = new Taskqueue();
-$taskqueue->readConfig('/path/to/gordon.config.json');
 
 $task = new Task('something');
 $task->addArg('123');
