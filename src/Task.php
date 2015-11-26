@@ -28,8 +28,8 @@ class Task
     {
         $this->type = $type;
         $this->task = array(
-            'Args' => array(),
-            'ErrorMessage'  => '',
+            'args' => array(),
+            'error_message'  => '',
         );
         return $this;
     }
@@ -64,7 +64,7 @@ class Task
     */
     public function setArgs(array $args)
     {
-        $this->task['Args'] = $this->encodeArgs($args);
+        $this->task['args'] = $this->encodeArgs($args);
     }
 
     /**
@@ -74,7 +74,7 @@ class Task
     */
     public function getArgs()
     {
-        return $this->task['Args'];
+        return $this->task['args'];
     }
 
     /**
@@ -85,7 +85,7 @@ class Task
     */
     public function addArg($arg)
     {
-        $this->task['Args'][] = $this->encodeArg($arg);
+        $this->task['args'][] = $this->encodeArg($arg);
         return $this;
     }
 
@@ -97,10 +97,10 @@ class Task
     */
     public function getArg($index = 0)
     {
-        if (!isset($this->task['Args'][$index])) {
+        if (!isset($this->task['args'][$index])) {
             return false;
         }
-        return $this->task['Args'][$index];
+        return $this->task['args'][$index];
     }
 
     /**
@@ -110,7 +110,7 @@ class Task
     */
     public function getErrorMessage()
     {
-        return $this->task['ErrorMessage'];
+        return $this->task['error_message'];
     }
 
     /**
@@ -121,8 +121,8 @@ class Task
     public function getJson()
     {
         $task = $this->task;
-        if (empty($task['ErrorMessage'])) {
-            unset($task['ErrorMessage']);
+        if (empty($task['error_message'])) {
+            unset($task['error_message']);
         }
         return json_encode($task);
     }
