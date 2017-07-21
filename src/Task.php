@@ -29,6 +29,7 @@ class Task
         $this->type = $type;
         $this->task = array(
             'args' => array(),
+            'env' => array(),
             'error_message'  => '',
         );
         return $this;
@@ -81,7 +82,7 @@ class Task
     * Adds an argument for this task.
     *
     * @param mixed $arg
-    * @return \Gordon\Task
+    * @return Gordon\Task
     */
     public function addArg($arg)
     {
@@ -90,7 +91,7 @@ class Task
     }
 
     /**
-    * Get the argument-value for at the given index.
+    * Get the argument-value for this task at the given index.
     *
     * @param int $index
     * @return bool|string
@@ -101,6 +102,56 @@ class Task
             return false;
         }
         return $this->task['args'][$index];
+    }
+
+    /**
+     * Set the environment variables for this task.
+     *
+     * @param array $env
+     * @return void
+     */
+    public function setEnvs(array $env)
+    {
+        foreach ($env as $key => $value) {
+            $this->setEnv($key, $value);
+        }
+    }
+
+    /**
+    * Get the environment variables for this task.
+    *
+    * @return array
+    */
+    public function getEnvs()
+    {
+        return $this->task['env'];
+    }
+
+    /**
+    * Sets an environment variable for this task.
+    *
+    * @param mixed $key
+    * @param mixed $value
+    * @return Gordon\Task
+    */
+    public function setEnv($key, $value)
+    {
+        $this->task['env'][(string)$key] = (string)$value;
+        return $this;
+    }
+
+    /**
+    * Get an environment variable for this task and the given key.
+    *
+    * @param int $key
+    * @return bool|string
+    */
+    public function getEnv($key)
+    {
+        if (!isset($this->task['env'][$key])) {
+            return false;
+        }
+        return $this->task['env'][$key];
     }
 
     /**
@@ -174,4 +225,6 @@ class Task
 }
 
 class TaskException extends \Exception
-{}
+{
+
+}

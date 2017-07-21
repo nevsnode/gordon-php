@@ -20,6 +20,7 @@ $taskqueue = new Taskqueue();
 
 $task = new Task('something');
 $task->addArg('123');
+$task->setEnv('APP_ENV', 'production');
 
 $taskqueue->addTask($task);
 ```

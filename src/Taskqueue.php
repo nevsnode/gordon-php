@@ -65,7 +65,7 @@ class Taskqueue
             }
 
             $this->redis = new \Redis();
-            if (!$this->redis->connect($this->params['redis_server'], $this->params['redis_port'], $this->params['redis_timeout'])) {
+            if (!$this->redis->connect($this->params['redis_server'], $this->params['redis_port'], $this->params['redis_timeout'], null, 100)) {
                 throw new TaskqueueException('Redis-connection could not be established');
             }
         }
@@ -160,4 +160,6 @@ class Taskqueue
 }
 
 class TaskqueueException extends \Exception
-{}
+{
+
+}
