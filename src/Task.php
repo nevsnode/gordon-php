@@ -175,6 +175,7 @@ class Task
         if (empty($task['error_message'])) {
             unset($task['error_message']);
         }
+        $task['env'] = (object)$task['env'];
         return json_encode($task);
     }
 
