@@ -25,15 +25,15 @@ class Taskqueue
     * @param array $params
     * @return void
     */
-    public function __construct(array $params = array())
+    public function __construct(array $params = [])
     {
         // set default parameters
-        $this->params = array(
+        $this->params = [
             'redis_server' => '127.0.0.1',
             'redis_port' => '6379',
             'queue_key' => 'taskqueue',
             'redis_timeout' => 2,
-        );
+        ];
 
         // merge passed parameters
         $this->setParams($params);
@@ -92,7 +92,29 @@ class Taskqueue
             $task->setArgs($args);
         }
 
-        return $this->addTaskObj($task);
+        $key = sprintf('%s:%s', $this->params['queue_key'], $task->getType());
+        return $this->addTaskObj($key, $task);
+    }
+
+    /**
+    * Adds a failed task to redis.
+    *
+    * @param string|Task $task
+    * @param int $ttl
+    * @return bool
+    */
+    public function addFailedTask(Task $task, $ttl)
+    {
+        $key = sprintf('%s:%s:failed', $this->params['queue_key'], $task->getType());
+        if (!$this->addTaskObj($key, $task)) {
+            return false;
+        }
+
+        if (false === $this->redis->expire($key, $ttl)) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -101,17 +123,38 @@ class Taskqueue
     * @param Task $task
     * @return bool
     */
-    protected function addTaskObj(Task $task)
+    protected function addTaskObj($key, Task $task)
     {
         $this->connect();
 
-        $key = sprintf('%s:%s', $this->params['queue_key'], $task->getType());
         $value = $task->getJson();
 
         if (false === $this->redis->rPush($key, $value)) {
             return false;
         }
         return true;
+    }
+
+    /**
+    * Pops a task entry from a task list, and returns it.
+    *
+    * @param string $type
+    * @return bool|Task
+    */
+    public function popTask($type)
+    {
+        $this->connect();
+
+        $key = sprintf('%s:%s', $this->params['queue_key'], $type);
+
+        $value = $this->redis->lPop($key);
+        if (empty($value)) {
+            return false;
+        }
+
+        $task = new Task($type);
+        $task->parseJson($value);
+        return $task;
     }
 
     /**

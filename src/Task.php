@@ -27,11 +27,11 @@ class Task
     public function __construct($type = '')
     {
         $this->type = $type;
-        $this->task = array(
-            'args' => array(),
-            'env' => array(),
+        $this->task = [
+            'args' => [],
+            'env' => [],
             'error_message'  => '',
-        );
+        ];
         return $this;
     }
 
@@ -155,7 +155,19 @@ class Task
     }
 
     /**
-    * Get the ErrorMessage for this task.
+    * Sets the error-message for this task.
+    *
+    * @param string $message
+    * @return Gordon\Task
+    */
+    public function setErrorMessage($message)
+    {
+        $this->task['error_message'] = (string)$message;
+        return $this;
+    }
+
+    /**
+    * Get the error-message for this task.
     *
     * @return string
     */

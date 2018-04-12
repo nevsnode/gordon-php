@@ -7,20 +7,20 @@ use \Gordon\Taskqueue;
 use \Gordon\Task;
 
 // create a new Taskqueue instance
-$taskqueue = new Taskqueue(array(
+$taskqueue = new Taskqueue([
     'redis_server' => '127.0.0.1',
     'redis_port' => '6379',
     'queue_key' => 'myqueue',
-));
+]);
 
 
 // the parameters can also be set after initialization
 $taskqueue = new Taskqueue();
-$taskqueue->setParams(array(
+$taskqueue->setParams([
     'redis_server' => '127.0.0.1',
     'redis_port' => '6379',
     'queue_key' => 'myqueue',
-));
+]);
 
 
 // add a task for type 'something' with the first argument '123' to the queue
