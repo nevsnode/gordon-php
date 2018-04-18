@@ -136,7 +136,7 @@ class Task
     */
     public function setEnv($key, $value)
     {
-        $this->task['env'][(string)$key] = (string)$value;
+        $this->task['env'][(string)$key] = $value;
         return $this;
     }
 
