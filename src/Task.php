@@ -179,16 +179,17 @@ class Task
     /**
     * Get this json-encoded value for this task, as it is pushed to Redis.
     *
+    * @param int $options
     * @return string
     */
-    public function getJson()
+    public function getJson($options = 0)
     {
         $task = $this->task;
         if (empty($task['error_message'])) {
             unset($task['error_message']);
         }
         $task['env'] = (object)$task['env'];
-        return json_encode($task);
+        return json_encode($task, $options);
     }
 
     /**
