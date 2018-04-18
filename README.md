@@ -1,7 +1,7 @@
 Gordon PHP
 ===
 
-Example library for Gordon written in PHP.
+Simple PHP-library for a taskqueue. Originally written as an example for [Gordon](https://github.com/nevsnode/gordon), but can also be used separately.
 
 Use with composer
 ---
