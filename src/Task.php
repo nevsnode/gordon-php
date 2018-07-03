@@ -61,11 +61,12 @@ class Task
     * Set the arguments for this task.
     *
     * @param array $args
-    * @return void
+    * @return Gordon\Task
     */
     public function setArgs(array $args)
     {
         $this->task['args'] = $this->encodeArgs($args);
+        return $this;
     }
 
     /**
@@ -108,13 +109,14 @@ class Task
      * Set the environment variables for this task.
      *
      * @param array $env
-     * @return void
+     * @return Gordon\Task
      */
     public function setEnvs(array $env)
     {
         foreach ($env as $key => $value) {
             $this->setEnv($key, $value);
         }
+        return $this;
     }
 
     /**
